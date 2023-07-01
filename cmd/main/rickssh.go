@@ -10,11 +10,20 @@ import (
 )
 
 func main() {
+	log.SetFormatter(&log.TextFormatter{
+		DisableLevelTruncation: true,
+		PadLevelText:           true,
+	})
 	debug := flag.Bool("d", false, "enable debug logging")
+	trace := flag.Bool("t", false, "enable trace logging")
 	flag.Parse()
 	if *debug {
-		debugMode()
+		log.SetLevel(log.DebugLevel)
 	}
+	if *trace {
+		log.SetLevel(log.TraceLevel)
+	}
+
 	listener, err := net.Listen("tcp", ":2222")
 	if err != nil {
 		panic(err)
@@ -27,11 +36,4 @@ func main() {
 		}
 		go transport.HandleConnection(conn, i)
 	}
-}
-
-func debugMode() {
-	log.SetLevel(log.DebugLevel)
-	log.SetFormatter(&log.TextFormatter{
-		DisableLevelTruncation: true,
-	})
 }

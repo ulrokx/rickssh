@@ -17,6 +17,7 @@ func HandleConnection(conn net.Conn, i int) {
 			break
 		}
 		log.Debugf("read %d bytes from connection # %d", len, i)
+		log.Tracef("connection # %d: read %s", i, buf[:len])
 		conn.Write([]byte(fmt.Sprintf("%d %s", i, buf[:len])))
 	}
 }
