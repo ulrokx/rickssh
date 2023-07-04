@@ -1,7 +1,6 @@
 package transport
 
 import (
-	"net"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -9,37 +8,38 @@ import (
 
 const PROTOCOL_VERSION = "SSH-2.0-rickssh_0.0.1"
 
-func HandleConnection(conn net.Conn, i int) {
-	log.Infof("handing connection # %d from %s", i, conn.RemoteAddr().String())
+func HandleConnection(ctx *ConnContext) {
+	log.Infof("handing connection # %d from %s", ctx.ConnectionID, ctx.Conn.RemoteAddr().String())
 	defer func() {
 		if r := recover(); r != nil {
-			conn.Close()
-			log.Infof("connection # %d ended: %v", i, r)
+			ctx.Conn.Close()
+			log.Infof("connection # %d ended: %v", ctx.ConnectionID, r)
 		}
 	}()
-	sendProtocolVersionExchange(conn, i)
-	receieveProtocolVersionExchange(conn, i)
+	sendProtocolVersionExchange(ctx)
+	receieveProtocolVersionExchange(ctx)
 	buf := make([]byte, 32565)
-	conn.Read(buf)
-	log.Tracef("connection # %d: read %s", i, buf)
+	len, _ := ctx.Conn.Read(buf)
+	log.Tracef("connection # %d: read %08b", ctx.ConnectionID, buf[:len])
+	log.Tracef("context: %#v", ctx)
 	for {
 
 	}
 }
 
-func sendProtocolVersionExchange(conn net.Conn, i int) {
-	log.Debugf("connection # %d: sending protocol version exchange: %s\n", i, PROTOCOL_VERSION)
-	_, err := conn.Write([]byte(PROTOCOL_VERSION + "\r\n"))
+func sendProtocolVersionExchange(ctx *ConnContext) {
+	log.Debugf("connection # %d: sending protocol version exchange: %s\n", ctx.ConnectionID, PROTOCOL_VERSION)
+	_, err := ctx.Conn.Write([]byte(PROTOCOL_VERSION + "\r\n"))
 	if err != nil {
 		log.Infof("connection ended: %v", err)
 		panic(err)
 	}
 }
 
-func receieveProtocolVersionExchange(conn net.Conn, i int) {
+func receieveProtocolVersionExchange(ctx *ConnContext) {
 	buf := make([]byte, 255)
-	length, err := conn.Read(buf)
-	log.Tracef("connection # %d: read %s", i, buf[:length])
+	length, err := ctx.Conn.Read(buf)
+	log.Tracef("connection # %d: read %s", ctx.ConnectionID, buf[:length])
 	if err != nil {
 		log.Debugf("connection ended: %v", err)
 		panic(err)
@@ -64,6 +64,8 @@ func receieveProtocolVersionExchange(conn net.Conn, i int) {
 		panic("invalid protocol version exchange")
 	}
 	softwareVersion := protocolVersionSoftwareVersion[2]
-	comments := versionSpaceComments[1]
-	log.Debugf("connection # %d: software version: %s comments: %s", i, softwareVersion, comments)
+	comments := strings.Split(versionSpaceComments[1], "\r\n")[0]
+	ctx.SoftwareVersion = softwareVersion
+	ctx.SoftwareComment = comments
+	log.Debugf("connection # %d: software version: %s comments: %s", ctx.ConnectionID, softwareVersion, comments)
 }

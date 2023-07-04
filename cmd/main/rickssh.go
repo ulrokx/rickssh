@@ -34,6 +34,7 @@ func main() {
 		if err != nil {
 			fmt.Println(err)
 		}
-		go transport.HandleConnection(conn, i)
+
+		go transport.HandleConnection(&transport.ConnContext{Conn: conn, ConnectionID: i})
 	}
 }
