@@ -20,7 +20,7 @@ func HandleConnection(ctx *ConnContext) {
 	receieveProtocolVersionExchange(ctx)
 	buf := make([]byte, 32565)
 	len, _ := ctx.Conn.Read(buf)
-	log.Tracef("connection # %d: read %08b", ctx.ConnectionID, buf[:len])
+	log.Tracef("connection # %d: read %c", ctx.ConnectionID, buf[:len])
 	log.Tracef("context: %#v", ctx)
 	for {
 
